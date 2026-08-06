@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Para Mi Princesita
+
+</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --night-deep: #0a0e27;
+    --night-mid: #131b3a;
+    --night-soft: #1c2650;
+    --star-gold: #f4c567;
+    --star-glow: #ffe6a8;
+    --blush: #ff8fa3;
+    --blush-soft: #ffc2cd;
+    --cream: #f5efe6;
+    --cream-dim: #cfc9c0;
+  }
+
+  *{ margin:0; padding:0; box-sizing:border-box; }
+
+  html{ scroll-behavior:smooth; }
+
+  body{
+    background: var(--night-deep);
+    color: var(--cream);
+    font-family:'Quicksand', sans-serif;
+    overflow-x:hidden;
+    position:relative;
+  }
+
+  body.locked{ overflow:hidden; height:100vh; }
+
+  /* ---------- Envelope welcome screen ---------- */
+  #envelope-screen{
+    position:fixed;
+    inset:0;
+    z-index:200;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    background:
+      radial-gradient(ellipse at 50% 30%, rgba(28,38,80,0.55), transparent 60%),
+      linear-gradient(180deg, var(--night-deep) 0%, var(--night-mid) 60%, var(--night-deep) 100%);
+    transition: opacity 0.9s ease, visibility 0.9s ease;
+  }
+  #envelope-screen.hidden{
+    opacity:0;
+    visibility:hidden;
+    pointer-events:none;
+  }
+
+  .welcome-text{
+    font-family:'Cormorant Garamond', serif;
+    font-style:italic;
+    font-size:clamp(1.1rem, 2.4vw, 1.4rem);
+    color:var(--cream-dim);
+    margin-bottom:2.6rem;
+    text-align:center;
+    padding:0 1.5rem;
+    transition:opacity 0.5s ease;
+  }
+  #envelope-screen.opened .welcome-text{ opacity:0; }
+
+  .envelope{
+    position:relative;
+    width:min(300px, 78vw);
+    height:min(200px, 52vw);
+    cursor:pointer;
+    perspective:1000px;
+  }
+
+  .env-body{
+    position:absolute;
+    inset:0;
+    background: linear-gradient(160deg, #1c2650, #131b3a);
+    border:1px solid rgba(244,197,103,0.35);
+    border-radius:6px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.5), 0 0 30px rgba(244,197,103,0.08);
+    overflow:hidden;
+  }
+
+  .env-letter{
+    position:absolute;
+    left:8%;
+    right:8%;
+    bottom:6%;
+    height:78%;
+    background: linear-gradient(180deg, var(--cream), #ece4d5);
+    border-radius:3px;
+    box-shadow: 0 -4px 12px rgba(0,0,0,0.25);
+    transform: translateY(0%);
+    transition: transform 1.1s cubic-bezier(.22,1,.36,1);
+    z-index:1;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .env-letter::before{
+    content:'✦';
+    color: var(--blush);
+    font-size:1.4rem;
+  }
+  .envelope.opening .env-letter{
+    transform: translateY(-92%);
+  }
+
+  .env-flap{
+    position:absolute;
+    top:0; left:0; right:0;
+    height:52%;
+    background: linear-gradient(160deg, #223163, #182451);
+    clip-path: polygon(0 0, 100% 0, 50% 100%);
+    transform-origin:top center;
+    transition: transform 0.9s cubic-bezier(.6,-0.2,.4,1.3);
+    z-index:3;
+    border-bottom:1px solid rgba(244,197,103,0.25);
+  }
+  .envelope.opening .env-flap{
+    transform: rotateX(180deg);
+    z-index:0;
+  }
+
+  .env-seal{
+    position:absolute;
+    top:38%;
+    left:50%;
+    transform:translate(-50%,-50%);
+    width:34px;
+    height:34px;
+    background: var(--blush);
+    border-radius:50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:0.95rem;
+    color:var(--night-deep);
+    box-shadow: 0 4px 12px rgba(255,143,163,0.4);
+    z-index:4;
+    transition: transform 0.4s ease, opacity 0.4s ease;
+  }
+  .envelope.opening .env-seal{
+    transform:translate(-50%,-50%) scale(0);
+    opacity:0;
+  }
+
+  .env-body-front{
+    position:absolute;
+    inset:0;
+    background: linear-gradient(180deg, transparent 48%, #10173a 48%);
+    clip-path: polygon(0 100%, 50% 45%, 100% 100%);
+    z-index:2;
+    pointer-events:none;
+  }
+
+  .tap-envelope-hint{
+    margin-top:2.2rem;
+    font-size:0.72rem;
+    letter-spacing:0.25em;
+    text-transform:uppercase;
+    color:var(--blush-soft);
+    opacity:0.75;
+    animation: floaty 2.4s ease-in-out infinite;
+    transition:opacity 0.5s ease;
+  }
+  #envelope-screen.opened .tap-envelope-hint{ opacity:0; }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration:0.001ms !important; animation-iteration-count:1 !important; transition-duration:0.001ms !important; }
+  }
+
+  /* ---------- Star field background ---------- */
+  #starfield{
+    position:fixed;
+    inset:0;
+    z-index:0;
+    background:
+      radial-gradient(ellipse at 20% 10%, rgba(28,38,80,0.6), transparent 55%),
+      radial-gradient(ellipse at 80% 85%, rgba(28,38,80,0.5), transparent 55%),
+      linear-gradient(180deg, var(--night-deep) 0%, var(--night-mid) 50%, var(--night-deep) 100%);
+    pointer-events:none;
+  }
+
+  .star{
+    position:absolute;
+    border-radius:50%;
+    background: var(--star-glow);
+    box-shadow: 0 0 6px 1px rgba(255,230,168,0.6);
+    animation: twinkle 4s ease-in-out infinite;
+  }
+
+  @keyframes twinkle{
+    0%, 100%{ opacity:0.25; transform:scale(0.85); }
+    50%{ opacity:1; transform:scale(1.15); }
+  }
+
+  .shooting-star{
+    position:absolute;
+    width:2px;
+    height:2px;
+    background:transparent;
+    z-index:1;
+  }
+  .shooting-star::before{
+    content:'';
+    position:absolute;
+    width:90px;
+    height:1.5px;
+    background:linear-gradient(90deg, rgba(255,230,168,0.9), transparent);
+    transform:rotate(-35deg);
+  }
+
+  /* ---------- Layout ---------- */
+  main{ position:relative; z-index:2; }
+
+  section{
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    padding:6rem 1.5rem;
+  }
+
+  .eyebrow{
+    font-family:'Quicksand', sans-serif;
+    letter-spacing:0.35em;
+    text-transform:uppercase;
+    font-size:0.72rem;
+    color: var(--blush-soft);
+    margin-bottom:1.25rem;
+    opacity:0.85;
+  }
+
+  h1, h2{
+    font-family:'Cormorant Garamond', serif;
+    font-weight:500;
+    line-height:1.15;
+  }
+
+  h1{
+    font-size:clamp(2.6rem, 7vw, 5rem);
+    color:var(--cream);
+    text-shadow: 0 0 30px rgba(244,197,103,0.25);
+  }
+
+  h1 em, h2 em{
+    font-style:italic;
+    color:var(--star-gold);
+  }
+
+  h2{
+    font-size:clamp(1.9rem, 4.5vw, 2.8rem);
+    margin-bottom:1.5rem;
+  }
+
+  p{
+    font-family:'Cormorant Garamond', serif;
+    font-size:clamp(1.15rem, 2.1vw, 1.45rem);
+    line-height:1.75;
+    color:var(--cream-dim);
+    max-width:640px;
+  }
+
+  .max-w{ max-width:680px; }
+
+  /* ---------- Hero ---------- */
+  #hero{ position:relative; }
+
+  .heart-pulse{
+    width:70px;
+    height:70px;
+    margin-bottom:2rem;
+    position:relative;
+  }
+  .heart-pulse svg{
+    width:100%;
+    height:100%;
+    filter: drop-shadow(0 0 14px rgba(255,143,163,0.55));
+    animation: beat 1.35s ease-in-out infinite;
+  }
+  @keyframes beat{
+    0%, 100%{ transform:scale(1); }
+    15%{ transform:scale(1.18); }
+    30%{ transform:scale(1); }
+    45%{ transform:scale(1.12); }
+    60%{ transform:scale(1); }
+  }
+
+  .scroll-hint{
+    margin-top:3.5rem;
+    font-size:0.75rem;
+    letter-spacing:0.25em;
+    text-transform:uppercase;
+    color:var(--cream-dim);
+    opacity:0.6;
+    animation: floaty 2.4s ease-in-out infinite;
+  }
+  @keyframes floaty{
+    0%,100%{ transform:translateY(0); opacity:0.5;}
+    50%{ transform:translateY(8px); opacity:0.9;}
+  }
+
+  /* ---------- Photo frame ---------- */
+  #foto{ padding-top:4rem; }
+
+  .polaroid{
+    background: linear-gradient(180deg, #fbf7ee, #eee5d3);
+    padding:1rem 1rem 3rem;
+    border-radius:4px;
+    box-shadow: 0 25px 60px rgba(0,0,0,0.45), 0 0 0 1px rgba(244,197,103,0.15);
+    width:min(320px, 82vw);
+    transform: rotate(-2.5deg);
+    transition: transform 0.5s ease, box-shadow 0.5s ease;
+    position:relative;
+    margin-top:2.5rem;
+  }
+  .polaroid:hover{
+    transform: rotate(0deg) scale(1.02);
+    box-shadow: 0 30px 70px rgba(0,0,0,0.5), 0 0 30px rgba(244,197,103,0.15);
+  }
+
+  .polaroid::before{
+    content:'✦';
+    position:absolute;
+    top:-14px;
+    left:50%;
+    transform:translateX(-50%);
+    width:30px;
+    height:30px;
+    background: var(--blush);
+    border-radius:50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:0.85rem;
+    color:var(--night-deep);
+    box-shadow: 0 4px 10px rgba(255,143,163,0.4);
+  }
+
+  .polaroid .frame{
+    width:100%;
+    aspect-ratio: 4 / 5;
+    background: var(--night-soft) url('amor.jpg') center/cover no-repeat;
+    border-radius:2px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color: var(--cream-dim);
+    font-family:'Quicksand', sans-serif;
+    font-size:0.75rem;
+    letter-spacing:0.05em;
+    text-align:center;
+    padding:1rem;
+  }
+
+  .polaroid .frame .fallback{
+    opacity:0.6;
+  }
+
+  .polaroid figcaption{
+    font-family:'Cormorant Garamond', serif;
+    font-style:italic;
+    font-size:1.05rem;
+    color:#3a3428;
+    text-align:center;
+    padding-top:0.9rem;
+  }
+  .divider{
+    width:1px;
+    height:70px;
+    background:linear-gradient(180deg, transparent, var(--star-gold), transparent);
+    margin:0 auto 2.5rem;
+    opacity:0.6;
+  }
+
+  /* ---------- Constellation sections ---------- */
+  .sky-panel{
+    position:relative;
+    width:100%;
+    max-width:820px;
+  }
+
+  .stars-grid{
+    display:flex;
+    flex-wrap:wrap;
+    justify-content:center;
+    gap:1.4rem;
+    margin-top:3rem;
+  }
+
+  .story-star{
+    --w: 190px;
+    width:var(--w);
+    min-height:180px;
+    background: linear-gradient(160deg, rgba(28,38,80,0.55), rgba(19,27,58,0.4));
+    border:1px solid rgba(244,197,103,0.25);
+    border-radius:16px;
+    padding:1.6rem 1.3rem;
+    cursor:pointer;
+    position:relative;
+    transition: transform 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
+    backdrop-filter: blur(2px);
+  }
+
+  .story-star:hover, .story-star:focus-visible{
+    transform: translateY(-6px);
+    border-color: rgba(244,197,103,0.75);
+    box-shadow: 0 12px 30px rgba(244,197,103,0.12);
+    outline:none;
+  }
+
+  .story-star .mark{
+    font-size:1.6rem;
+    color:var(--star-gold);
+    display:block;
+    margin-bottom:0.7rem;
+    transition:transform 0.4s ease;
+  }
+  .story-star.open .mark{ transform:rotate(90deg) scale(1.1); }
+
+  .story-star .label{
+    font-family:'Cormorant Garamond', serif;
+    font-style:italic;
+    font-size:1.15rem;
+    color:var(--cream);
+    display:block;
+    margin-bottom:0.6rem;
+  }
+
+  .story-star .detail{
+    font-family:'Quicksand', sans-serif;
+    font-size:0.85rem;
+    line-height:1.55;
+    color:var(--cream-dim);
+    max-height:0;
+    opacity:0;
+    overflow:hidden;
+    transition: max-height 0.5s ease, opacity 0.4s ease;
+  }
+  .story-star.open .detail{
+    max-height:220px;
+    opacity:1;
+    margin-top:0.4rem;
+  }
+
+  .story-star.dim{ opacity:0.55; border-style:dashed; }
+  .story-star.dim.open{ opacity:1; }
+
+  .edit-note{
+    font-size:0.68rem;
+    letter-spacing:0.03em;
+    color: rgba(255,194,205,0.65);
+  }
+
+  /* ---------- Path / support section ---------- */
+  .path-wrap{
+    width:100%;
+    max-width:600px;
+    margin-top:3rem;
+    display:flex;
+    flex-direction:column;
+    gap:0;
+  }
+  .path-step{
+    display:flex;
+    align-items:flex-start;
+    gap:1.1rem;
+    text-align:left;
+    position:relative;
+    padding-bottom:2.6rem;
+  }
+  .path-step:last-child{ padding-bottom:0; }
+  .path-step::before{
+    content:'';
+    position:absolute;
+    left:10px;
+    top:26px;
+    bottom:-6px;
+    width:1px;
+    background:linear-gradient(180deg, var(--star-gold), transparent);
+    opacity:0.4;
+  }
+  .path-step:last-child::before{ display:none; }
+  .path-dot{
+    width:21px;
+    height:21px;
+    min-width:21px;
+    border-radius:50%;
+    background: var(--night-soft);
+    border:1px solid var(--star-gold);
+    box-shadow: 0 0 10px rgba(244,197,103,0.4);
+    margin-top:3px;
+  }
+  .path-step p{ font-size:1.05rem; color:var(--cream-dim); }
+  .path-step strong{ color:var(--cream); font-style:italic; font-weight:500;}
+
+  /* ---------- Heart section ---------- */
+  #heart-section{ position:relative; }
+
+  .big-heart{
+    width:150px;
+    height:150px;
+    margin-bottom:1rem;
+    cursor:pointer;
+    position:relative;
+    transition:transform 0.2s ease;
+  }
+  .big-heart:hover{ transform:scale(1.04); }
+  .big-heart svg{
+    width:100%;
+    height:100%;
+    filter: drop-shadow(0 0 24px rgba(255,143,163,0.45));
+    animation: beat 1.6s ease-in-out infinite;
+  }
+
+  .hidden-msg{
+    max-height:0;
+    opacity:0;
+    overflow:hidden;
+    transition:max-height 0.7s ease, opacity 0.6s ease;
+  }
+  .hidden-msg.show{
+    max-height:400px;
+    opacity:1;
+    margin-top:1.6rem;
+  }
+
+  .tap-hint{
+    font-size:0.75rem;
+    letter-spacing:0.2em;
+    text-transform:uppercase;
+    color:var(--blush-soft);
+    opacity:0.75;
+    margin-top:0.5rem;
+  }
+
+  /* ---------- Signature ---------- */
+  #signature{
+    padding-bottom:8rem;
+  }
+  .sig-name{
+    font-family:'Cormorant Garamond', serif;
+    font-style:italic;
+    font-size:clamp(1.6rem, 3vw, 2.2rem);
+    color:var(--star-gold);
+    margin-top:1.6rem;
+  }
+  .sig-date{
+    font-size:0.75rem;
+    letter-spacing:0.15em;
+    color:var(--cream-dim);
+    opacity:0.6;
+    margin-top:0.5rem;
+    text-transform:uppercase;
+  }
+
+  /* sparkle burst */
+  .sparkle{
+    position:fixed;
+    width:6px; height:6px;
+    border-radius:50%;
+    background: var(--blush-soft);
+    pointer-events:none;
+    z-index:50;
+    animation: sparkle-out 0.9s ease-out forwards;
+  }
+  @keyframes sparkle-out{
+    0%{ opacity:1; transform:translate(0,0) scale(1); }
+    100%{ opacity:0; transform:translate(var(--dx), var(--dy)) scale(0.2); }
+  }
+
+  ::selection{ background: var(--blush); color: var(--night-deep); }
+</style>
+</head>
+<body>
+
+<audio id="bgm" src="dream.mp3" loop preload="auto"></audio>
+
+<div id="envelope-screen">
+  <p class="welcome-text">Mi Princesita linda<br>Te Quiero</p>
+  <div class="envelope" id="envelope" role="button" tabindex="0" aria-label="Abrir el sobre">
+    <div class="env-letter"></div>
+    <div class="env-body"></div>
+    <div class="env-body-front"></div>
+    <div class="env-flap"></div>
+    <div class="env-seal">✦</div>
+  </div>
+  <div class="tap-envelope-hint">toca el sobre para abrirlo</div>
+</div>
+
+<div id="starfield"></div>
+
+<main>
+
+  <!-- HERO -->
+  <section id="hero">
+    <div class="heart-pulse">
+      <svg viewBox="0 0 32 29" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M16 28.5C16 28.5 1 19.4 1 9.6C1 4.9 4.7 1 9.3 1C12.2 1 14.6 2.6 16 5C17.4 2.6 19.8 1 22.7 1C27.3 1 31 4.9 31 9.6C31 19.4 16 28.5 16 28.5Z" fill="#ff8fa3"/>
+      </svg>
+    </div>
+    <p class="eyebrow">Una carta que vive en el cielo que compartimos</p>
+    <h1>Para ti, mi <em>Amor</em></h1>
+    <p class="max-w" style="margin-top:1.5rem;">Cada estrella que ves aquí arriba es un pedazo de lo que siento.<br> Con amor, verdad, y sinceridad, todo por ti.</p>
+    <div class="scroll-hint">desliza ↓</div>
+  </section>
+
+  <!-- QUIÉN ERES -->
+  <section id="quien-eres">
+    <p class="eyebrow">Lo que veo cuando te veo</p>
+    <h2>Todo lo que <em>eres</em></h2>
+    <p class="max-w">
+      Estás grabada en mis ojos, Angy. No hay paisaje que no me recuerde tu risa,
+      no hay silencio que no se sienta a tu voz. Te quiero, te adoro, y no de una manera
+      pequeña: te quiero como se quiere lo que ya es parte de uno mismo. Estoy orgulloso
+      de todo lo que eres, de cómo eres, de la forma en la que enfrentas cada día. No hay
+      un solo latido mío que no sea, de alguna forma, también tuyo.
+    </p>
+  </section>
+
+  <!-- FOTO -->
+  <section id="foto">
+    <p class="eyebrow">Un momento nuestro</p>
+    <h2>Grabada en mis <em>ojos</em></h2>
+    <figure class="polaroid">
+      <div class="frame">
+        <span class="fallback">amor.jpg</span>
+      </div>
+      <figcaption>nosotros ✦</figcaption>
+    </figure>
+  </section>
+
+  <!-- CONSTELACIÓN DE LOGROS -->
+  <section id="logros">
+    <p class="eyebrow">Constelación de lo que ya has logrado</p>
+    <h2>Estoy <em>orgulloso</em> de ti</h2>
+    <p class="max-w">Toca cada estrella. Cada una es algo tuyo que admiro.</p>
+    <div class="sky-panel">
+      <div class="stars-grid">
+        <div class="story-star" tabindex="0" role="button">
+          <span class="mark">✦</span>
+          <span class="label">Tu fuerza</span>
+          <div class="detail">
+            Cada vez que las cosas se ponen difíciles, tú sigues de pie. Esa fuerza tuya
+            es una de las cosas que más admiro de ti.
+            <br><span class="edit-note"></span>
+          </div>
+        </div>
+        <div class="story-star" tabindex="0" role="button">
+          <span class="mark">✦</span>
+          <span class="label">Tu dedicación</span>
+          <div class="detail">
+            La manera en la que te entregas a lo que te importa, sin rendirte, es algo
+            que me enamora una y otra vez.
+            <br><span class="edit-note"></span>
+          </div>
+        </div>
+        <div class="story-star" tabindex="0" role="button">
+          <span class="mark">✦</span>
+          <span class="label">Tu corazón</span>
+          <div class="detail">
+            La forma en la que cuidas a quienes quieres, incluyéndome a mí, es algo que
+            no doy por sentado nunca.
+            <br><span class="edit-note"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LO QUE LE FALTA POR LOGRAR -->
+  <section id="metas">
+    <p class="eyebrow">Las estrellas que aún vas a alcanzar</p>
+    <h2>Y voy a estar <em>ahí</em></h2>
+    <p class="max-w">
+      Sé que hay metas que todavía persigues, sueños que aún no se cumplen del todo.
+      Esas estrellas, las que aún están un poco más lejos, también las veo. Y quiero que
+      sepas algo: no importa cuánto tarden en encenderse, yo voy a estar caminando a tu
+      lado hasta que lo hagan.
+    </p>
+
+    <div class="sky-panel">
+      <div class="stars-grid">
+        <div class="story-star dim" tabindex="0" role="button">
+          <span class="mark">☆</span>
+          <span class="label">Lo que viene</span>
+          <div class="detail">
+            Esa meta que traes en mente ahora mismo, la que a veces sientes lejana:
+            vas a lograrla. Y yo voy a estar aplaudiendo cuando lo hagas.
+            <br><span class="edit-note"></span>
+          </div>
+        </div>
+        <div class="story-star dim" tabindex="0" role="button">
+          <span class="mark">☆</span>
+          <span class="label">Lo que sueñas</span>
+          <div class="detail">
+            Ese sueño que a veces guardas en silencio también cuenta. No estás sola
+            en quererlo cumplir.
+            <br><span class="edit-note"></span>
+          </div>
+        </div>
+        <div class="story-star dim" tabindex="0" role="button">
+          <span class="mark">☆</span>
+          <span class="label">Lo que sigue</span>
+          <div class="detail">
+            Y todo lo que venga después de eso, también. No hay meta tuya que no me
+            importe.
+            <br><span class="edit-note"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="path-wrap">
+      <div class="path-step">
+        <div class="path-dot"></div>
+        <p><strong>Te voy a apoyar</strong> en cada paso, aunque el camino se ponga cuesta arriba.</p>
+      </div>
+      <div class="path-step">
+        <div class="path-dot"></div>
+        <p><strong>Voy a estar a tu lado</strong>, no solo en lo fácil, sino sobre todo en lo difícil.</p>
+      </div>
+      <div class="path-step">
+        <div class="path-dot"></div>
+        <p><strong>Te quiero incondicionalmente</strong>, sin condiciones, sin medias tintas, sin fecha de vencimiento.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- CORAZÓN -->
+  <section id="heart-section">
+    <p class="eyebrow">Lo que siento cuando pienso en ti</p>
+    <h2>Mi <em>corazón</em> late por ti</h2>
+    <p class="max-w">
+      Siempre estás en mi pensamiento. No hay momento del día en el que mi corazón no
+      lata, de alguna forma, por ti. No hay sentimiento mío que no termine llevándome
+      de vuelta a ti.
+    </p>
+
+    <div class="big-heart" id="tapHeart" role="button" tabindex="0" aria-label="Toca el corazón">
+      <svg viewBox="0 0 32 29" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M16 28.5C16 28.5 1 19.4 1 9.6C1 4.9 4.7 1 9.3 1C12.2 1 14.6 2.6 16 5C17.4 2.6 19.8 1 22.7 1C27.3 1 31 4.9 31 9.6C31 19.4 16 28.5 16 28.5Z" fill="#ff8fa3"/>
+      </svg>
+    </div>
+    <div class="tap-hint">toca el corazón</div>
+
+    <div class="hidden-msg" id="hiddenMsg">
+      <p class="max-w">
+        Mi corazón siente como si tú estuvieras siempre conmigo, aunque no estés cerca
+        en ese momento. Te quiero, Angy. Y quiero todo lo que eres: lo que ya lograste,
+        lo que estás logrando ahora, y todo lo que todavía te falta por cumplir.
+      </p>
+    </div>
+  </section>
+
+  <!-- FIRMA -->
+  <section id="signature">
+    <p class="eyebrow">Con todo lo que soy</p>
+    <p class="max-w">Esto no es solo una carta. Es una forma de decirte, con calma y sin prisa, que
+    te quiero exactamente como eres, y como vas a ser.</p>
+    <div class="sig-name">Tuyo, Tu siempre Latoso</div>
+    <div class="sig-date">Fer</div>
+  </section>
+
+</main>
+
+<script>
+  // ---------- Envelope welcome ----------
+  document.body.classList.add('locked');
+  const envelopeScreen = document.getElementById('envelope-screen');
+  const envelope = document.getElementById('envelope');
+  const bgm = document.getElementById('bgm');
+  let opened = false;
+
+  function openEnvelope(){
+    if(opened) return;
+    opened = true;
+    envelope.classList.add('opening');
+    envelopeScreen.classList.add('opened');
+
+    bgm.volume = 0;
+    bgm.play().catch(()=>{ /* el navegador puede bloquear autoplay sin interacción, pero esto ya viene de un click */ });
+    let vol = 0;
+    const fadeIn = setInterval(()=>{
+      vol = Math.min(vol + 0.05, 0.85);
+      bgm.volume = vol;
+      if(vol >= 0.85) clearInterval(fadeIn);
+    }, 80);
+
+    setTimeout(()=>{
+      envelopeScreen.classList.add('hidden');
+      document.body.classList.remove('locked');
+    }, 1300);
+  }
+
+  envelope.addEventListener('click', openEnvelope);
+  envelope.addEventListener('keydown', e=>{
+    if(e.key==='Enter' || e.key===' '){ e.preventDefault(); openEnvelope(); }
+  });
+
+  // ---------- Starfield generation ----------
+  const starfield = document.getElementById('starfield');
+  const STAR_COUNT = 90;
+  for(let i=0;i<STAR_COUNT;i++){
+    const s = document.createElement('div');
+    s.className = 'star';
+    const size = Math.random()*2.4 + 0.6;
+    s.style.width = size+'px';
+    s.style.height = size+'px';
+    s.style.left = Math.random()*100+'%';
+    s.style.top = Math.random()*100+'%';
+    s.style.animationDelay = (Math.random()*4)+'s';
+    s.style.animationDuration = (3+Math.random()*3)+'s';
+    starfield.appendChild(s);
+  }
+
+  // Occasional shooting star
+  function shootingStar(){
+    const el = document.createElement('div');
+    el.className = 'shooting-star';
+    el.style.left = (Math.random()*70+10)+'%';
+    el.style.top = (Math.random()*40+5)+'%';
+    el.style.opacity = '0';
+    el.style.transition = 'opacity 0.2s, transform 1.1s ease-out';
+    starfield.appendChild(el);
+    requestAnimationFrame(()=>{
+      el.style.opacity = '1';
+      el.style.transform = 'translate(140px, 90px)';
+    });
+    setTimeout(()=>{ el.style.opacity='0'; }, 700);
+    setTimeout(()=>{ el.remove(); }, 1400);
+  }
+  setInterval(shootingStar, 3800);
+
+  // ---------- Story stars toggle ----------
+  document.querySelectorAll('.story-star').forEach(card=>{
+    const toggle = ()=> card.classList.toggle('open');
+    card.addEventListener('click', toggle);
+    card.addEventListener('keydown', e=>{
+      if(e.key==='Enter' || e.key===' '){ e.preventDefault(); toggle(); }
+    });
+  });
+
+  // ---------- Heart tap: sparkles + hidden message ----------
+  const heart = document.getElementById('tapHeart');
+  const hiddenMsg = document.getElementById('hiddenMsg');
+  let revealed = false;
+
+  function burstSparkles(x, y){
+    for(let i=0;i<14;i++){
+      const sp = document.createElement('div');
+      sp.className = 'sparkle';
+      const angle = Math.random()*Math.PI*2;
+      const dist = 40 + Math.random()*70;
+      sp.style.setProperty('--dx', Math.cos(angle)*dist+'px');
+      sp.style.setProperty('--dy', Math.sin(angle)*dist+'px');
+      sp.style.left = x+'px';
+      sp.style.top = y+'px';
+      document.body.appendChild(sp);
+      setTimeout(()=>sp.remove(), 950);
+    }
+  }
+
+  function tapHeart(e){
+    const rect = heart.getBoundingClientRect();
+    burstSparkles(rect.left+rect.width/2, rect.top+rect.height/2);
+    if(!revealed){
+      hiddenMsg.classList.add('show');
+      revealed = true;
+    }
+  }
+  heart.addEventListener('click', tapHeart);
+  heart.addEventListener('keydown', e=>{
+    if(e.key==='Enter' || e.key===' '){ e.preventDefault(); tapHeart(e); }
+  });
+</script>
+
+</body>
+</html>
